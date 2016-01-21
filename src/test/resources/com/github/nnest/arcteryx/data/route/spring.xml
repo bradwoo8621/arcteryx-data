@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans
+	xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+	xsi:schemaLocation=" 
+        http://www.springframework.org/schema/beans 
+        http://www.springframework.org/schema/beans/spring-beans-4.0.xsd 
+        http://www.springframework.org/schema/context 
+		http://www.springframework.org/schema/context/spring-context-4.0.xsd 
+        http://www.springframework.org/schema/jdbc 
+        http://www.springframework.org/schema/jdbc/spring-jdbc-4.0.xsd 
+        http://www.springframework.org/schema/tx 
+        http://www.springframework.org/schema/tx/spring-tx-4.0.xsd 
+        http://www.springframework.org/schema/data/jpa 
+        http://www.springframework.org/schema/data/jpa/spring-jpa.xsd"
+	default-lazy-init="true">
+
+	<bean
+		id="EntityManagerFactory"
+		class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean"
+		p:dataSource-ref="DataSource"
+		p:jpaVendorAdapter-ref="HibernateJpaVendorAdapter"
+		p:persistenceUnitName="default"
+		p:persistenceXmlLocation="classpath:com/github/nnest/arcteryx/data/route/persistence.xml">
+		<!-- <property name="packagesToScan" value="com.github.nnest.arcteryx.data.route" 
+			/> -->
+		<property name="mappingResources">
+			<list>
+				<value>com/github/nnest/arcteryx/data/route/User.hbm.xml</value>
+			</list>
+		</property>
+	</bean>
+
+	<jpa:repositories
+		base-package="com.github.nnest.arcteryx.data.route"
+		transaction-manager-ref="TransactionManager"
+		entity-manager-factory-ref="EntityManagerFactory" />
+
+	<bean
+		id="TransactionManager"
+		class="org.springframework.orm.jpa.JpaTransactionManager"
+		p:entityManagerFactory-ref="EntityManagerFactory" />
+
+	<tx:annotation-driven
+		transaction-manager="TransactionManager"
+		proxy-target-class="true" />
+
+	<bean
+		id="HibernateJpaVendorAdapter"
+		class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter"
+		p:databasePlatform="org.hibernate.dialect.H2Dialect"
+		p:showSql="true" />
+
+	<bean
+		id="DataSourceOne"
+		class="org.springframework.jdbc.datasource.SimpleDriverDataSource"
+		p:driverClass="org.hsqldb.jdbc.JDBCDriver"
+		p:url="jdbc:hsqldb:mem:one"
+		p:username="username"
+		p:password="password" />
+
+	<bean
+		id="DataSourceTwo"
+		class="org.springframework.jdbc.datasource.SimpleDriverDataSource"
+		p:driverClass="org.hsqldb.jdbc.JDBCDriver"
+		p:url="jdbc:hsqldb:mem:two"
+		p:username="username"
+		p:password="password" />
+
+	<bean
+		id="DataSourceRouter"
+		class="com.github.nnest.arcteryx.data.routing.NonJTADataSourceRouter" />
+
+	<!-- p:defaultTargetDataSource-ref="DataSourceOne" -->
+	<bean
+		id="DataSource"
+		class="com.github.nnest.arcteryx.data.routing.RoutingDataSource"
+		p:dataSourceRouter-ref="DataSourceRouter">
+		<property name="targetDataSources">
+			<map>
+				<entry
+					key="one"
+					value-ref="DataSourceOne" />
+				<entry
+					key="two"
+					value-ref="DataSourceTwo" />
+			</map>
+		</property>
+	</bean>
+
+	<jdbc:initialize-database data-source="DataSourceOne">
+		<jdbc:script
+			location="classpath:/com/github/nnest/arcteryx/data/route/schema.sql" />
+	</jdbc:initialize-database>
+	<jdbc:initialize-database data-source="DataSourceTwo">
+		<jdbc:script
+			location="classpath:/com/github/nnest/arcteryx/data/route/schema.sql" />
+	</jdbc:initialize-database>
+</beans>
