@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans
+	xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+	xmlns:repo="http://www.springframework.org/schema/data/repository"
+	xsi:schemaLocation=" 
+        http://www.springframework.org/schema/beans 
+        http://www.springframework.org/schema/beans/spring-beans-4.0.xsd 
+        http://www.springframework.org/schema/context 
+		http://www.springframework.org/schema/context/spring-context-4.0.xsd 
+        http://www.springframework.org/schema/jdbc 
+        http://www.springframework.org/schema/jdbc/spring-jdbc-4.0.xsd 
+        http://www.springframework.org/schema/tx 
+        http://www.springframework.org/schema/tx/spring-tx-4.0.xsd 
+        http://www.springframework.org/schema/data/jpa 
+        http://www.springframework.org/schema/data/jpa/spring-jpa.xsd
+        http://www.springframework.org/schema/data/repository 
+        http://www.springframework.org/schema/data/repository/spring-repository.xsd"
+	default-lazy-init="true">
+
+	<bean
+		id="EntityManagerFactoryUser"
+		class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean"
+		p:dataSource-ref="DataSourceUser"
+		p:jpaVendorAdapter-ref="HibernateJpaVendorAdapter"
+		p:persistenceUnitName="user"
+		p:persistenceXmlLocation="classpath:com/github/nnest/arcteryx/data/diff/persistence.xml">
+		<property name="mappingResources">
+			<list>
+				<value>com/github/nnest/arcteryx/data/diff/User.hbm.xml
+				</value>
+			</list>
+		</property>
+	</bean>
+	<bean
+		id="EntityManagerFactoryOrder"
+		class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean"
+		p:dataSource-ref="DataSourceOrder"
+		p:jpaVendorAdapter-ref="HibernateJpaVendorAdapter"
+		p:persistenceUnitName="order"
+		p:persistenceXmlLocation="classpath:com/github/nnest/arcteryx/data/diff/persistence.xml">
+		<property name="mappingResources">
+			<list>
+				<value>com/github/nnest/arcteryx/data/diff/Order.hbm.xml
+				</value>
+			</list>
+		</property>
+	</bean>
+
+	<jpa:repositories
+		base-package="com.github.nnest.arcteryx.data.diff"
+		transaction-manager-ref="TransactionManagerUser"
+		entity-manager-factory-ref="EntityManagerFactoryUser">
+		<repo:include-filter
+			type="regex"
+			expression=".*\.User.*" />
+	</jpa:repositories>
+	<jpa:repositories
+		base-package="com.github.nnest.arcteryx.data.diff"
+		transaction-manager-ref="TransactionManagerOrder"
+		entity-manager-factory-ref="EntityManagerFactoryOrder">
+		<repo:include-filter
+			type="regex"
+			expression=".*\.Order.*" />
+	</jpa:repositories>
+
+	<bean
+		id="TransactionManagerUser"
+		class="org.springframework.orm.jpa.JpaTransactionManager"
+		p:entityManagerFactory-ref="EntityManagerFactoryUser" />
+	<bean
+		id="TransactionManagerOrder"
+		class="org.springframework.orm.jpa.JpaTransactionManager"
+		p:entityManagerFactory-ref="EntityManagerFactoryOrder" />
+
+	<bean
+		id="HibernateJpaVendorAdapter"
+		class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter"
+		p:databasePlatform="org.hibernate.dialect.H2Dialect"
+		p:showSql="true" />
+
+	<bean
+		id="DataSourceUser"
+		class="org.springframework.jdbc.datasource.SimpleDriverDataSource"
+		p:driverClass="org.hsqldb.jdbc.JDBCDriver"
+		p:url="jdbc:hsqldb:mem:user"
+		p:username="username"
+		p:password="password" />
+	<bean
+		id="DataSourceOrder"
+		class="org.springframework.jdbc.datasource.SimpleDriverDataSource"
+		p:driverClass="org.hsqldb.jdbc.JDBCDriver"
+		p:url="jdbc:hsqldb:mem:order"
+		p:username="username"
+		p:password="password" />
+
+	<jdbc:initialize-database data-source="DataSourceUser">
+		<jdbc:script
+			location="classpath:/com/github/nnest/arcteryx/data/diff/schema-user.sql" />
+	</jdbc:initialize-database>
+	<jdbc:initialize-database data-source="DataSourceOrder">
+		<jdbc:script
+			location="classpath:/com/github/nnest/arcteryx/data/diff/schema-order.sql" />
+	</jdbc:initialize-database>
+</beans>
